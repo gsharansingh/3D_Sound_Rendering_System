@@ -159,5 +159,5 @@ int_output_data = np.int16(out/np.max(np.abs(out)) * 32767)
 
 print(f'\nSuccessfully Executed...!')
 
-scipy.io.wavfile.write('output/horizontal_frequency.wav', fs, int_output_data)
-winsound.PlaySound('output/horizontal_frequency.wav', winsound.SND_ASYNC)
+scipy.io.wavfile.write('output/frequency_domain_azimuth.wav', fs, int_output_data)
+winsound.PlaySound('output/frequency_domain_azimuth.wav', winsound.SND_ASYNC)

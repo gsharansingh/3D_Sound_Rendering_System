@@ -9,10 +9,12 @@ import numpy as np
 from scipy.io import wavfile
 from scipy.io import loadmat
 from scipy import io
+from os.path import join as pjoin
+import os
 from scipy.signal import butter, lfilter, freqz
 import matplotlib.pyplot as plt
 import scipy.fftpack
-import winsound #to play sound
+import winsound
 
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
@@ -26,23 +28,27 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     return y
 
 ## Loading audio file
-sample_rate, data = wavfile.read(r'C:\Users\Sharan\Desktop\DSP\Project\Final\helicopter.wav')
+data_dir = pjoin(os.getcwd(), 'input', 'audio')
+wav_fname = pjoin(data_dir, 'helicopter.wav')
+sample_rate, data = wavfile.read(wav_fname)
 
 ## Loading HRTF data file
-read_mat = loadmat(r'C:\Users\Sharan\Desktop\DSP\Project\Final\large_pinna_final.mat')
+data_dir = pjoin(os.getcwd(), 'input', 'datafiles')
+mat_fname = pjoin(data_dir, 'large_pinna_frontal.mat')
+read_mat = loadmat(mat_fname)
 
-left = read_mat.get('left')   #storing left array of data
+left = read_mat.get('left') #storing left array of data
 right = read_mat.get('right') #storing right array of data
 
 ## Left side Process
 k = 0;
-j = 12250;
+j = 8909;
 left_out = np.zeros(882200,np.int16)
-for i in range (0,72,1):
+for i in range (0,99,1):
     
     ## HRTF data conversion into frequency domain
     left_data=left[:,i] #taking data from a column 
-    pad_left=np.zeros(12249,np.int16) #zeros to make it of lenght: n+p-1
+    pad_left=np.zeros(8908,np.int16) #zeros to make it of lenght: n+p-1
     left_data=np.append(left_data,pad_left) #appending zeros in the end
     left_data_fft=scipy.fftpack.fft(left_data) #fast fourier transfer
 #    print(f'lenght of fft of data{len(left_data_fft)}')
@@ -70,23 +76,23 @@ for i in range (0,72,1):
     
     ## Overlap and Add
     x1 = np.append(np.zeros(k,np.int16),con_out) #generating zeros till the current data starts and appending it with current convolved data
-    y1 = np.append(x1,np.zeros(869750-k,np.int16)) #appending zeros for remaining part
+    y1 = np.append(x1,np.zeros(873091-k,np.int16)) #appending zeros for remaining part
     left_out = left_out[:882199]
     left_out = left_out + y1 #adding the overlapped data
-    k = k+12250;
-    j = j+12250;
+    k = k+8909;
+    j = j+8909;
 
 
 ## Right side Process   
 k = 0;
-j = 12250;
+j = 8909;
 
 right_out = np.zeros(882200,np.int16)
-for i in range (0,72,1):
+for i in range (0,99,1):
     
     ## HRTF data conversion into frequency domain
     right_data=right[:,i]
-    pad_right=np.zeros(12249,np.int16) #zeros to make it of lenght: n+p-1
+    pad_right=np.zeros(8908,np.int16) #zeros to make it of lenght: n+p-1
     right_data=np.append(right_data,pad_right) #appending zeros in the end
     right_data_fft=scipy.fftpack.fft(right_data) #fast fourier transfer
 #    print(f'lenght of fft of data{len(right_data_fft)}')
@@ -110,11 +116,11 @@ for i in range (0,72,1):
     
     ## Overlap and Add
     x2 = np.append(np.zeros(k,np.int16),con_out) #generating zeros till the current data starts and appending it with current convolved data
-    y2 = np.append(x2,np.zeros(869750-k,np.int16))#appending zeros for remaining part
+    y2 = np.append(x2,np.zeros(873091-k,np.int16))#appending zeros for remaining part
     right_out = right_out[:882199]
     right_out = right_out + y2 #adding the overlapped data
-    k = k+12250;
-    j = j+12250;
+    k = k+8909;
+    j = j+8909;
 
 ##Parameters for Low-pass filter
 order = 6
@@ -144,9 +150,8 @@ t = np.linspace(0, T, n, endpoint=False)
 
 # Filter the data
 data1 = left_out;
-left_out = butter_lowpass_filter(data1, cutoff, fs, order) #filtering the left side convolved output
-
 data2 = right_out;
+left_out = butter_lowpass_filter(data1, cutoff, fs, order) #filtering the left side convolved output
 right_out = butter_lowpass_filter(data2, cutoff, fs, order) #filtering the right side convolved output
 
  
@@ -154,7 +159,6 @@ out=np.stack((right_out,left_out),axis=1) #stacking the both side convolved outp
 out = np.int16(out/np.max(np.abs(out)) * 32767)
 
 print(f'\nSuccessfully Executed...!')
-#print(out)
 
-io.wavfile.write('frequency_domain_azimuth.wav', sample_rate, out)
-winsound.PlaySound('frequency_domain_azimuth.wav', winsound.SND_ASYNC)
+io.wavfile.write('output/frequency_domain_elevation.wav', sample_rate, out)
+winsound.PlaySound('output/frequency_domain_elevation.wav', winsound.SND_ASYNC)

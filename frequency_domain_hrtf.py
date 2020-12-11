@@ -7,12 +7,13 @@ Created on Wed Apr  3 07:49:29 2019
 
 import numpy as np
 from scipy.io import wavfile
-from scipy.io import loadmat
 from scipy import io
+import os
+from os.path import join as pjoin
 from scipy.signal import butter, lfilter, freqz
 import matplotlib.pyplot as plt
 import scipy.fftpack
-import winsound
+import winsound #to play sound
 
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
@@ -25,24 +26,44 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
+## Parameters for HRTF
+c = 343  #speed of sound = 343 m/sec
+a = 0.152/2 #radius of head (in meters)
+N = 200 #sample lenght
+tau = 0.5*(a/c) #value of tau
+ 
+HR = np.zeros((200,72)) #Inintialzing the array size for Right side
+HL = np.zeros((200,72)) #Inintialzing the array size for Leftt side
+
+for t in range(0,72,1): #for 72 diffrent angles
+    theta = -np.pi*(1/2-t/72); #theta changes by 1.25 degrees
+    alpha = (1+np.sin(theta))*0.5; 
+#    tau = (theta+np.sin(theta))*a/c #this tau can be used for better results according to research paper    
+    Tr = (1-alpha)*tau;
+    Tl = alpha * tau;
+    
+    for k in range(0,200,1):
+        w = (2*np.pi*k*44100)/N;
+        HL[k][t] = ((1+(1j*2*(1-alpha)*tau*w))*np.exp(-1*1j*w*Tl))/(1+(1j*w*tau)) #Transfer Function for Left side
+        HR[k][t] = ((1+(1j*2*alpha*tau*w))*np.exp(-1*1j*w*Tr))/(1+(1j*w*tau)) #Transfer Function for Right side
+
 ## Loading audio file
-sample_rate, data = wavfile.read(r'C:\Users\Sharan\Desktop\DSP\Project\Final\helicopter.wav')
+data_dir = pjoin(os.getcwd(), 'input', 'audio')
+wav_fname = pjoin(data_dir, 'helicopter.wav')
+sample_rate, data = wavfile.read(wav_fname)
 
-## Loading HRTF data file
-read_mat = loadmat(r'C:\Users\Sharan\Desktop\DSP\Project\Final\large_pinna_frontal.mat')
-
-left = read_mat.get('left') #storing left array of data
-right = read_mat.get('right') #storing right array of data
+left = HL 
+right = HR
 
 ## Left side Process
 k = 0;
-j = 8909;
+j = 12250;
 left_out = np.zeros(882200,np.int16)
-for i in range (0,99,1):
+for i in range (0,72,1):
     
     ## HRTF data conversion into frequency domain
     left_data=left[:,i] #taking data from a column 
-    pad_left=np.zeros(8908,np.int16) #zeros to make it of lenght: n+p-1
+    pad_left=np.zeros(12249,np.int16) #zeros to make it of lenght: n+p-1
     left_data=np.append(left_data,pad_left) #appending zeros in the end
     left_data_fft=scipy.fftpack.fft(left_data) #fast fourier transfer
 #    print(f'lenght of fft of data{len(left_data_fft)}')
@@ -70,23 +91,23 @@ for i in range (0,99,1):
     
     ## Overlap and Add
     x1 = np.append(np.zeros(k,np.int16),con_out) #generating zeros till the current data starts and appending it with current convolved data
-    y1 = np.append(x1,np.zeros(873091-k,np.int16)) #appending zeros for remaining part
+    y1 = np.append(x1,np.zeros(869750-k,np.int16)) #appending zeros for remaining part
     left_out = left_out[:882199]
     left_out = left_out + y1 #adding the overlapped data
-    k = k+8909;
-    j = j+8909;
+    k = k+12250;
+    j = j+12250;
 
 
 ## Right side Process   
 k = 0;
-j = 8909;
+j = 12250;
 
 right_out = np.zeros(882200,np.int16)
-for i in range (0,99,1):
+for i in range (0,72,1):
     
     ## HRTF data conversion into frequency domain
     right_data=right[:,i]
-    pad_right=np.zeros(8908,np.int16) #zeros to make it of lenght: n+p-1
+    pad_right=np.zeros(12249,np.int16) #zeros to make it of lenght: n+p-1
     right_data=np.append(right_data,pad_right) #appending zeros in the end
     right_data_fft=scipy.fftpack.fft(right_data) #fast fourier transfer
 #    print(f'lenght of fft of data{len(right_data_fft)}')
@@ -110,11 +131,11 @@ for i in range (0,99,1):
     
     ## Overlap and Add
     x2 = np.append(np.zeros(k,np.int16),con_out) #generating zeros till the current data starts and appending it with current convolved data
-    y2 = np.append(x2,np.zeros(873091-k,np.int16))#appending zeros for remaining part
+    y2 = np.append(x2,np.zeros(869750-k,np.int16))#appending zeros for remaining part
     right_out = right_out[:882199]
     right_out = right_out + y2 #adding the overlapped data
-    k = k+8909;
-    j = j+8909;
+    k = k+12250;
+    j = j+12250;
 
 ##Parameters for Low-pass filter
 order = 6
@@ -149,10 +170,11 @@ left_out = butter_lowpass_filter(data1, cutoff, fs, order) #filtering the left s
 right_out = butter_lowpass_filter(data2, cutoff, fs, order) #filtering the right side convolved output
 
  
-out=np.stack((right_out,left_out),axis=1) #stacking the both side convolved outputs. Here axis =1 means it stacks vertically 
-out = np.int16(out/np.max(np.abs(out)) * 32767)
+out=np.stack((left_out,right_out),axis=1) #stacking the both side convolved outputs. Here axis =1 means it stacks vertically 
+out = np.int16(out/np.max(np.abs(out)) * 65525)
 
 print(f'\nSuccessfully Executed...!')
+#print(out)
 
-io.wavfile.write('frequency_domain_elevation.wav', sample_rate, out)
-winsound.PlaySound('frequency_domain_elevation.wav', winsound.SND_ASYNC)
+io.wavfile.write('output/frequency_hrtf_azimuth.wav', sample_rate, out)
+winsound.PlaySound('output/frequency_hrtf_azimuth.wav', winsound.SND_ASYNC) #to play sound write after execution

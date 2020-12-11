@@ -8,12 +8,12 @@ Created on Wed Apr  3 07:49:29 2019
 import numpy as np
 from scipy.io import wavfile
 from scipy.io import loadmat
+from scipy import io
 from os.path import join as pjoin
 import os
-from scipy import signal
 from scipy.signal import butter, lfilter, freqz
 import matplotlib.pyplot as plt
-import scipy.fftpack
+from scipy import signal
 import winsound #to play sound
 
 def butter_lowpass(cutoff, fs, order=5):
@@ -30,11 +30,11 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
 ## Loading audio file
 data_dir = pjoin(os.getcwd(), 'input', 'audio')
 wav_fname = pjoin(data_dir, 'helicopter.wav')
-fs, data = wavfile.read(wav_fname)
+sample_rate, data = wavfile.read(wav_fname)
 
 ## Loading HRTF data file
 data_dir = pjoin(os.getcwd(), 'input', 'datafiles')
-mat_fname = pjoin(data_dir, 'large_pinna_final.mat')
+mat_fname = pjoin(data_dir, 'large_pinna_frontal.mat')
 read_mat = loadmat(mat_fname)
 
 left = read_mat.get('left') #storing left array of data
@@ -42,32 +42,33 @@ right = read_mat.get('right') #storing right array of data
 
 ## Left side Process
 k = 0;
-j = 12250;
+j = 8909;
 left_out = np.array([],np.int16)
-for i in range (0,72,1):
+for i in range (0,99,1):
     left_data=left[:,i] #taking data from a column    
     data_test = data[k:j] #taking some portion of audio file 
-    k = k+12250;
-    j = j+12250;
+    k = k+8909;
+    j = j+8909;
     con_out = signal.convolve(data_test,left_data) #convolution
-    con_out = con_out[99:12349] #taking convolved data of size 12250
+    con_out = con_out[99:9008] #taking convolved data of size 12250
     left_out = np.append(left_out,con_out) #appending the current convolved data with recent
 
 ## Right side Process    
 k = 0;
-j = 12250;
+j = 8909;
 right_out = np.array([],np.int16)
-for i in range (0,72,1):
+for i in range (0,99,1):
     right_data=right[:,i] #taking data from a column 
     data_test = data[k:j] #taking some portion of audio file
-    k = k+12250;
-    j = j+12250;
+    k = k+8909;
+    j = j+8909;
     con_out = signal.convolve(data_test,right_data) #convolution
-    con_out = con_out[99:12349] #taking convolved data of size 12250
+    con_out = con_out[99:9008] #taking convolved data of size 12250
     right_out = np.append(right_out,con_out) #appending the current convolved data with recent
  
 # Filter requirements.
 order = 6
+fs = sample_rate  # sample rate, Hz
 cutoff = 7000  # desired cutoff frequency of the filter, Hz
 
 # Get the filter coefficients so we can check its frequency response.
@@ -88,7 +89,7 @@ plt.grid()
 ## Demonstrate the use of the filter.
 # First make some data to be filtered.
 T = 20         # seconds
-n = int(T * fs) # total number of samples
+n = int(T * fs -9) # total number of samples
 t = np.linspace(0, T, n, endpoint=False)
 
 
@@ -111,8 +112,8 @@ plt.show()
 
     
 out=np.stack((right_out,left_out),axis=1) #stacking the both side convolved outputs. Here axis =1 means it stacks vertically
-int_output_data = np.int16(out/np.max(np.abs(out)) * 32767)
+out = np.int16(out/np.max(np.abs(out)) * 32767)
 print(f'\nSuccessfully Executed...!')
 
-scipy.io.wavfile.write('output/time_domain_azimuth.wav', fs, int_output_data)
-winsound.PlaySound('output/time_domain_azimuth.wav', winsound.SND_ASYNC)
+io.wavfile.write('output/time_domain_elevation.wav', sample_rate, out)
+winsound.PlaySound('output/time_domain_elevation.wav', winsound.SND_ASYNC)
