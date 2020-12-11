@@ -11,9 +11,9 @@
     * [A. Collecting HRTF Measurements]
     * [B. HRTF Equalization]
 * [BUILDING THE MODELS](#building-the-models)
-  * [Part I]()
-  * [Part II]()
-  * [Part III]()
+  * [Part I](#part-i)
+  * [Part II](#part-ii)
+  * [Part III](#part-iii)
 * [RESULTS](#results)
 * [CONCLUSION](#conclusion)
 * [REFERENCES](#references)
@@ -61,11 +61,11 @@ The database used contains:
 
 a.) horizontal-plane KEMAR HRIR data for large pinnae which is stored in two arrays of size 200 x 72, for the left ear as ‘left’, and for the right ear as ‘right’.
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/time_domain_rendering_azimuth.py)
 
 b.) frontal-plane KEMAR HRIR data for large pinnae which is stored in two arrays of size 200 x 99, for the left ear as ‘left’, and for the right ear as ‘right’.
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/time_domain_rendering_elevation.py)
 
 The audio file data needs to be convolved with the HRIR data in the time domain but before that audio file data needs to be divided into samples of 12250 samples per angle of 5 degrees and the HRIR data needed is given as 200 samples per angle. In simpler terms, first 12250 samples of the audio file data need to be convolved with the first column of the HRIR database. The next 12250 samples of audio file data need to be convolved with the second column of the HRIR database and the so on and the loop continuous like this saving the result of each convolutions in an array. This process is done for both the left HRIR database and the right HRIR database. Both the results of convolution are then stacked together to produce the moving sound source perception.
 
@@ -97,11 +97,11 @@ In DSP, overlap-add method is a main technique which consists of dividing the si
 As per in our program we used overlap-add method on the output obtained by the IFFT. Zero padding is done. The output is overridden with this new zero padded output. This can be represented in the Fig. 3.
 This process is done for both the left HRIR database and the right HRIR database. Both outputs are then stacked together to obtain the moving sound source perception.
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/frequency_domain_rendering_azimuth.py)
 
 The same needs to be done for the scenario 2 in which sound source perceives to move in the frontal-plane.
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/frequency_domain_rendering_elevation.py)
 
 This can be further described in few simpler steps:
 > 1. Take 882000 samples from audio signal, because the audio file is of 30 seconds.
@@ -144,11 +144,11 @@ where 𝛼=0.5(1+sin𝜃), 𝜏=0.5(𝛼𝑐), 𝑇_𝑅=(1−𝛼)𝜏 and 𝑇
 
 In frequency domain:
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/frequency_domain_hrtf.py)
 
 In time domain:
 
-  [**Implementation code**]()
+  [**Implementation code**](https://github.com/gsharansingh/3D_Sound_Rendering_System/blob/master/time_domain_hrtf.py)
 
 ## RESULTS
 In time domain, the output sound rotates accurately. A little amount of noise can be heard. In frequency domain, by using the overlap and method, noise has been reduced when comparing to time domain results. However, while doing it using spherical head model, great amount of noise can be heard. After implementing low-pass filter, the noise has been reduced up to great extent.
